@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        form {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            padding: 8px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .forecast {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        .forecast-heading {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .forecast-table {
+            display: flex;
+            flex-wrap: nowrap;
+        }
+
+        .forecast-item {
+            flex: 0 0 auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-right: 10px;
+        }
+
+        .forecast-item h3 {
+            margin-top: 0;
+        }
+
+        .forecast-item p {
+            margin: 5px 0;
+        }
+        
+        .additional-info {
+            margin-top: 30px;
+        }
+
+        .additional-info-heading {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            z-index: 1;
+        }
+
+        .additional-info ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .additional-info li {
+            margin-bottom: 20px;
+        }
+
+        .additional-info p {
+            margin: 5px 0;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Weather App</h1>
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="location" placeholder="Enter a city or city, state" required>
+            <input type="submit" value="Get Weather">
+        </form>
+        {% if weather_data %}
+            {% if weather_data.error %}
+                <p class="error-message">{{ weather_data.error }}</p>
+            {% else %}
+                <div>
+                    <h2>Weather in {{ weather_data.current_weather.location }}:</h2>
+                    <p>Temperature: {{ weather_data.current_weather.temperature }}°F</p>
+                    <p>Humidity: {{ weather_data.current_weather.humidity }}%</p>
+                    <p>Description: {{ weather_data.current_weather.description }}</p>
+                    <p><a href="/weather-details">Click here for more details</a></p>
+                </div>
+                <div id="map" class="map"></div>
+                <div class="forecast">
+                    <div class="forecast-heading">
+                        <h2>Weather Forecast:</h2>
+                    </div>
+                    <div class="forecast-table">
+                        {% for forecast_item in weather_data.forecast %}
+                            <div class="forecast-item">
+                                <h3>{{ forecast_item.datetime }}</h3>
+                                <p>Temperature: {{ forecast_item.temperature }}°F</p>
+                                <p>Humidity: {{ forecast_item.humidity }}%</p>
+                                <p>Description: {{ forecast_item.description }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+                <script>
+                    var cityCoordinates = [{{ weather_data.current_weather.latitude }}, {{ weather_data.current_weather.longitude }}];
+                    var map = L.map('map').setView(cityCoordinates, 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+                    var wmsLayer = L.tileLayer.wms('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=4054214bff185cc3196c087b076636eb', {
+                        layers: 'precipitation_new',
+                        format: 'image/png',
+                        transparent: true,
+                        attribution: 'Map data &copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
+                    }).addTo(map);
+                    L.marker(cityCoordinates).addTo(map);
+                </script>
+                <div class="additional-info">
+                    <div class="additional-info-heading">
+                        <h2>Additional Information:</h2>
+                    </div>
+                    <ul>
+                        <li>Wind Speed: {{ weather_data.current_weather.wind_speed }} mph</li>
+                        <li>Pressure: {{ weather_data.current_weather.pressure }} hPa</li>
+                        <li>Visibility: {{ weather_data.current_weather.visibility }} mi</li>
+                    </ul>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>
